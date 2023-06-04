@@ -1,2 +1,0 @@
-protoc --proto_path=C:\protoc-3.9.1-win64\include -I ./Transport/ MainService.proto --go-grpc_out=./Transport/PBs --go_out=./Transport/PBs
-goose sqlite3 ./Databases/NodeDb.db up

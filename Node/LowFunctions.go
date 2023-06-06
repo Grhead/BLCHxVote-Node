@@ -219,7 +219,7 @@ func CompareChains(address string) error {
 	return nil
 }
 
-func NewChain(chainMaster string, count uint64) (string, error) {
+func NewChain(chainMaster string, count int64) (string, error) {
 	genesis, err := Blockchain.NewChain(count, chainMaster)
 	if err != nil {
 		log.Println(err)
@@ -248,7 +248,7 @@ func GetBalance(pack *Transport.UserHelp) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return strconv.FormatUint(balance, 10), nil
+	return strconv.FormatInt(balance, 10), nil
 }
 
 func GetChainSize(pack *Transport.MasterHelp) (string, error) {

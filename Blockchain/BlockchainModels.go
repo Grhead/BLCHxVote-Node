@@ -15,7 +15,7 @@ type Transaction struct {
 	PrevBlock string `form:"prevBlock" json:"prevBlock"`
 	Sender    string `form:"sender" json:"sender"`
 	Receiver  string `form:"receiver" json:"receiver"`
-	Value     uint64 `form:"value" json:"value"`
+	Value     int64  `form:"value" json:"value"`
 	Signature string `form:"signature" json:"signature"`
 	CurrHash  string `form:"currHash" json:"currHash"`
 }
@@ -25,9 +25,9 @@ type Block struct {
 	PrevHash     string                 `json:"prevHash"`
 	TimeStamp    *timestamppb.Timestamp `json:"timeStamp"`
 	Transactions []Transaction          `json:"transactions"`
-	BalanceMap   map[string]uint64      `json:"balanceMap"`
+	BalanceMap   map[string]int64       `json:"balanceMap"`
 	Nonce        uint64                 `json:"nonce"`
-	Difficulty   uint64                 `json:"difficulty"`
+	Difficulty   int64                  `json:"difficulty"`
 	ChainMaster  string                 `json:"chainMaster"`
 }
 

@@ -87,7 +87,7 @@ func (block *Block) AddTransaction(tran *Transaction) error {
 		return errors.New("len tx = limit")
 	}
 	var err error
-	var balanceInChain uint64
+	var balanceInChain int64
 	balanceInTX := tran.Value
 	if value, ok := block.BalanceMap[tran.Sender]; ok {
 		balanceInChain = value
@@ -109,8 +109,8 @@ func (block *Block) AddTransaction(tran *Transaction) error {
 	return nil
 }
 
-func (block *Block) addBalance(receiver string, value uint64) error {
-	var balanceInChain uint64
+func (block *Block) addBalance(receiver string, value int64) error {
+	var balanceInChain int64
 	var err error
 	if v, ok := block.BalanceMap[receiver]; ok {
 		balanceInChain = v

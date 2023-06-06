@@ -6,8 +6,9 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
+	//"encoding/json"
+	"github.com/goccy/go-json"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
@@ -108,7 +109,7 @@ func Sign(privateKey string, data string) string {
 	return signature
 }
 
-func ToBytes(data uint64) []byte {
+func ToBytes(data int64) []byte {
 	var buf = new(bytes.Buffer)
 	err := binary.Write(buf, binary.BigEndian, data)
 	if err != nil {

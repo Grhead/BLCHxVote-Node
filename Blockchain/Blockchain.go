@@ -29,7 +29,7 @@ func init() {
 	}
 }
 
-func NewChain(VotesCount uint64, ChainMaster string) (*Block, error) {
+func NewChain(VotesCount int64, ChainMaster string) (*Block, error) {
 	db, err := gorm.Open(sqlite.Open("Database/NodeDb.db"), &gorm.Config{})
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func NewChain(VotesCount uint64, ChainMaster string) (*Block, error) {
 
 	genesis := &Block{
 		PrevHash:    HashSum(ChainMaster),
-		BalanceMap:  make(map[string]uint64),
+		BalanceMap:  make(map[string]int64),
 		TimeStamp:   curTime,
 		ChainMaster: ChainMaster,
 	}
@@ -72,9 +72,9 @@ func NewBlock(prevHash string, chainMaster string) (*Block, error) {
 		return nil, err
 	}
 	return &Block{
-		Difficulty:  uint64(difficulty),
+		Difficulty:  int64(difficulty),
 		PrevHash:    prevHash,
-		BalanceMap:  make(map[string]uint64),
+		BalanceMap:  make(map[string]int64),
 		ChainMaster: chainMaster,
 	}, nil
 }
@@ -83,7 +83,7 @@ func NewTransaction(
 	fromUser *User,
 	toUser *User,
 	lastHash string,
-	value uint64) (*Transaction, error) {
+	value int64) (*Transaction, error) {
 	VarConf := viper.GetString("RAND_BYTES")
 	VarConfConversion, err := strconv.Atoi(VarConf)
 	if err != nil {
@@ -111,7 +111,7 @@ func NewTransaction(
 func NewTransactionFromChain(
 	master string,
 	toUser *User,
-	value uint64) (*Transaction, error) {
+	value int64) (*Transaction, error) {
 	VarConf := viper.GetString("RAND_BYTES")
 	VarConfConversion, err := strconv.Atoi(VarConf)
 	if err != nil {
@@ -330,12 +330,12 @@ func Size(master string) (uint64, error) {
 	return index, nil
 }
 
-func Balance(moneyMan string) (uint64, error) {
+func Balance(moneyMan string) (int64, error) {
 	db, err := gorm.Open(sqlite.Open("Database/NodeDb.db"), &gorm.Config{})
 	if err != nil {
 		return 0, err
 	}
-	var balance uint64
+	var balance int64
 	var blocks []*Chain
 	db.Find(&blocks)
 	for _, v := range blocks {
@@ -466,33 +466,33 @@ func GetFullDb() ([]*Block, error) {
 	return resultMasterBlocks, nil
 }
 
-func DbSize() (uint64, error) {
-	db, err := gorm.Open(sqlite.Open("Database/NodeDb.db"), &gorm.Config{})
-	if err != nil {
-		return 0, err
-	}
-	var index uint64
-	var blocks []*Chain
-	db.Find(&blocks)
-	for range blocks {
-		if err != nil {
-			return 0, err
-		}
-		index++
-	}
-	return index, nil
-}
+//func DbSize() (uint64, error) {
+//	db, err := gorm.Open(sqlite.Open("Database/NodeDb.db"), &gorm.Config{})
+//	if err != nil {
+//		return 0, err
+//	}
+//	var index uint64
+//	var blocks []*Chain
+//	db.Find(&blocks)
+//	for range blocks {
+//		if err != nil {
+//			return 0, err
+//		}
+//		index++
+//	}
+//	return index, nil
+//}
 
-func GetBlock(uuidR uuid.UUID) (uuid.UUID, *Block, error) {
-	db, err := gorm.Open(sqlite.Open("Database/NodeDb.db"), &gorm.Config{})
-	if err != nil {
-		return uuid.Nil, nil, err
-	}
-	var chainBlock *Chain
-	db.Where("Id = ?", uuidR).Find(&chainBlock)
-	desBlock, err := DeserializeBlock(chainBlock.Block)
-	if err != nil {
-		return uuid.Nil, nil, nil
-	}
-	return uuidR, desBlock, nil
-}
+//func GetBlock(uuidR uuid.UUID) (uuid.UUID, *Block, error) {
+//	db, err := gorm.Open(sqlite.Open("Database/NodeDb.db"), &gorm.Config{})
+//	if err != nil {
+//		return uuid.Nil, nil, err
+//	}
+//	var chainBlock *Chain
+//	db.Where("Id = ?", uuidR).Find(&chainBlock)
+//	desBlock, err := DeserializeBlock(chainBlock.Block)
+//	if err != nil {
+//		return uuid.Nil, nil, nil
+//	}
+//	return uuidR, desBlock, nil
+//}

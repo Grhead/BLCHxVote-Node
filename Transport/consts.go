@@ -4,7 +4,7 @@ import "VOX2/Blockchain"
 
 type ChainHelp struct {
 	Master string `form:"master" json:"master"`
-	Count  uint64 `form:"count" json:"count"`
+	Count  int64 `form:"count" json:"count"`
 }
 type MasterHelp struct {
 	Master string `form:"master" json:"master"`

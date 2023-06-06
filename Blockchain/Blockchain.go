@@ -93,7 +93,7 @@ func NewTransaction(
 	if err != nil {
 		return nil, err
 	}
-	if fromUser.Affiliation != toUser.Affiliation {
+	if fromUser.VotingAffiliation != toUser.VotingAffiliation {
 		return nil, errors.New("affiliation does not match")
 	}
 	tran := &Transaction{
@@ -125,7 +125,7 @@ func NewTransactionFromChain(
 	if err != nil {
 		return nil, err
 	}
-	if master != toUser.Affiliation {
+	if master != toUser.VotingAffiliation {
 		return nil, errors.New("affiliation does not match")
 	}
 	tran := &Transaction{
@@ -148,7 +148,7 @@ func LastHash(master string) (string, error) {
 	var hash string
 	var chain []*Chain
 	var blocks []*Block
-	db.Find(&chain)
+	db.Table("Chains").Find(&chain)
 	for _, v := range chain {
 		deserializedBlock, errDes := DeserializeBlock(v.Block)
 		if errDes != nil {
@@ -227,7 +227,7 @@ func LoadToEnterAlreadyUserPrivate(privateKey string) (*User, error) {
 	}
 	db.Raw("SELECT VotingAffiliation FROM PublicKeySets WHERE PublicKey = $1",
 		LoadedUser.Address()).Scan(&affiliation)
-	LoadedUser.Affiliation = affiliation
+	LoadedUser.VotingAffiliation = affiliation
 	return LoadedUser, nil
 }
 
@@ -244,7 +244,23 @@ func LoadToEnterAlreadyUserPublic(publicKey string) (*User, error) {
 	var affiliation string
 	db.Raw("SELECT VotingAffiliation FROM PublicKeySets WHERE PublicKey = $1",
 		publicKey).Scan(&affiliation)
-	LoadedUser.Affiliation = affiliation
+	LoadedUser.VotingAffiliation = affiliation
+	return LoadedUser, nil
+}
+
+func GetUserByPublic(publicKey string) (*User, error) {
+	db, err := gorm.Open(sqlite.Open("Database/ContractDB.db"), &gorm.Config{})
+	if err != nil {
+		return nil, err
+	}
+	var LoadedUser *User
+	//var affiliation string
+	db.Raw("SELECT * FROM PublicKeySets WHERE PublicKey = $1",
+		publicKey).Scan(&LoadedUser)
+	//LoadedUser.Affiliation = affiliation
+	//LoadedUser.PublicKey = publicKey
+	//LoadedUser.IsUsed = fa
+	//LoadedUser.Affiliation = affiliation
 	return LoadedUser, nil
 }
 
@@ -280,10 +296,10 @@ func NewPublicKeyItem(affiliation string) (*User, error) {
 		false,
 		affiliation)
 	return &User{
-		Id:          tempUUID.String(),
-		PublicKey:   tempKey,
-		IsUsed:      false,
-		Affiliation: affiliation,
+		Id:                tempUUID.String(),
+		PublicKey:         tempKey,
+		IsUsed:            false,
+		VotingAffiliation: affiliation,
 	}, nil
 }
 

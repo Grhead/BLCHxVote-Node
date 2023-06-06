@@ -32,10 +32,10 @@ type Block struct {
 }
 
 type User struct {
-	Id          string `json:"uuid"`
-	PublicKey   string `json:"publicKey"`
-	IsUsed      bool   `json:"isUsed"`
-	Affiliation string `json:"affiliation"`
+	Id                string `json:"uuid"`
+	PublicKey         string `json:"publicKey"`
+	IsUsed            bool   `json:"isUsed"`
+	VotingAffiliation string `json:"affiliation"`
 }
 
 type ElectionSubjects struct {

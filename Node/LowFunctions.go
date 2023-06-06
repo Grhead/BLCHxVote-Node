@@ -124,15 +124,30 @@ func AddBlock(pack *Transport.BlockHelp) (string, error) {
 }
 
 func AddTransaction(BlockTx *Transport.TransactionHelp) (string, error) {
-	if BlockTx.Tx == nil {
-		return "", errors.New("tx is empty")
+	var err error
+	var tx *Blockchain.Transaction
+	if BlockTx.Sender == nil {
+		log.Println(BlockTx)
+		tx, err = Blockchain.NewTransactionFromChain(BlockTx.Master, BlockTx.Receiver, BlockTx.Count)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		hash, errLastHash := Blockchain.LastHash(BlockTx.Master)
+		if errLastHash != nil {
+			return "", errLastHash
+		}
+		tx, err = Blockchain.NewTransaction(BlockTx.Sender, BlockTx.Receiver, hash, BlockTx.Count)
+		if err != nil {
+			return "", err
+		}
 	}
 	if len(BlockForTransaction.Transactions) == Blockchain.TxsLimit {
 		return "", errors.New("transactions limit in blocks")
 	}
 	Mutex.Lock()
 	BlockForTransaction.ChainMaster = BlockTx.Master
-	err := BlockForTransaction.AddTransaction(BlockTx.Tx)
+	err = BlockForTransaction.AddTransaction(tx)
 	if err != nil {
 		return "", err
 	}

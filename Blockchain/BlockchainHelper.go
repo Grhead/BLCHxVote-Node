@@ -59,9 +59,9 @@ func GetTime() (*timestamp.Timestamp, error) {
 	}
 	//TODO what is log fatal
 	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			log.Fatal(err)
+		errReadCloser := Body.Close()
+		if errReadCloser != nil {
+			log.Fatal(errReadCloser)
 		}
 	}(resp.Body)
 	body, err := io.ReadAll(resp.Body)

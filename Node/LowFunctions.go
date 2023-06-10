@@ -67,7 +67,7 @@ func goAddTransaction() {
 	Mutex.Unlock()
 }
 func goCompare(address string) {
-	err := CompareChains(address)
+	err := compareChains(address)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -153,13 +153,13 @@ func AddTransaction(BlockTx *Transport.TransactionHelp) (string, error) {
 	}
 	Mutex.Unlock()
 	fmt.Println(len(BlockForTransaction.Transactions))
-	if len(BlockForTransaction.Transactions) == Blockchain.TxsLimit {
-		go goAddTransaction()
-	}
+	//if len(BlockForTransaction.Transactions) == Blockchain.TxsLimit {
+	go goAddTransaction()
+	//}
 	return "ok", nil
 }
 
-func CompareChains(address string) error {
+func compareChains(address string) error {
 	dbNode, err := gorm.Open(sqlite.Open("Database/NodeDb.db"), &gorm.Config{})
 	if err != nil {
 		return err

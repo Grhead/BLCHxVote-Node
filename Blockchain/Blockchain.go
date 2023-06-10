@@ -189,26 +189,26 @@ func AddBlock(block *Block) error {
 }
 
 // NewDormantUser same with AddPass (BLCHxVote)
-func NewDormantUser(identifier string) error {
+func NewDormantUser(identifier string) (string, error) {
 	db, err := gorm.Open(sqlite.Open("Database/ContractDB.db"), &gorm.Config{})
 	if err != nil {
-		return err
+		return "", err
 	}
 	privateGenKey, err := GenerateKey()
 	if err != nil {
-		return err
+		return "", err
 	}
 	var isUsed string
 	db.Raw("SELECT Id FROM RelationPatterns WHERE PersonIdentifier = $1",
 		identifier).Scan(&isUsed)
 	if isUsed != "" {
-		return errors.New("identifier not allowed")
+		return "", errors.New("identifier not allowed")
 	}
 	db.Exec("INSERT INTO RelationPatterns (Id, PersonIdentifier, PrivateKeyTemplate) VALUES ($1, $2, $3)",
 		uuid.NewString(),
 		HashSum(identifier),
 		privateGenKey)
-	return nil
+	return HashSum(identifier), nil
 }
 
 func LoadToEnterAlreadyUserPrivate(privateKey string) (*User, error) {
@@ -220,14 +220,12 @@ func LoadToEnterAlreadyUserPrivate(privateKey string) (*User, error) {
 	var LoadedUser *User
 	db.Raw("SELECT PublicKey FROM KeyLinks WHERE PrivateKey = $1",
 		privateKey).Scan(&publicKey)
-	var affiliation string
 	errWhere := db.Table("KeyLinks").Where("PublicKey = ?", publicKey).First(&LoadedUser)
 	if errWhere.Error != nil {
 		return nil, errWhere.Error
 	}
-	db.Raw("SELECT VotingAffiliation FROM PublicKeySets WHERE PublicKey = $1",
-		LoadedUser.Address()).Scan(&affiliation)
-	LoadedUser.VotingAffiliation = affiliation
+	db.Raw("SELECT * FROM PublicKeySets WHERE PublicKey = $1",
+		publicKey).Scan(&LoadedUser)
 	return LoadedUser, nil
 }
 
@@ -241,10 +239,8 @@ func LoadToEnterAlreadyUserPublic(publicKey string) (*User, error) {
 	if errWhere.Error != nil {
 		return nil, errWhere.Error
 	}
-	var affiliation string
-	db.Raw("SELECT VotingAffiliation FROM PublicKeySets WHERE PublicKey = $1",
-		publicKey).Scan(&affiliation)
-	LoadedUser.VotingAffiliation = affiliation
+	db.Raw("SELECT * FROM PublicKeySets WHERE PublicKey = $1",
+		publicKey).Scan(&LoadedUser)
 	return LoadedUser, nil
 }
 
@@ -387,7 +383,7 @@ func RegisterGeneratePrivate(passport string, salt string, PublicKey string) (st
 	var checkIsUsed bool
 	db.Raw("SELECT isUsed FROM PublicKeySets WHERE PublicKey = $1",
 		PublicKey).Scan(&checkIsUsed)
-	if checkIsUsed == true {
+	if checkIsUsed {
 		return "", errors.New("public key is already used")
 	}
 	var checkIsCandidate string

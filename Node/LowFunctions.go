@@ -131,7 +131,9 @@ func AddTransaction(BlockTx *Transport.TransactionHelp) (string, error) {
 	}
 	if BlockTx.Sender == nil {
 		log.Println(BlockTx)
-		publicReceiver, errLoad := Blockchain.LoadToEnterAlreadyUserPublic(BlockTx.Receiver.PublicKey)
+		//publicReceiver, errLoad := Blockchain.LoadToEnterAlreadyUserPublic(BlockTx.Receiver.PublicKey)
+		publicReceiver, errLoad := Blockchain.GetUserByPublic(BlockTx.Receiver.PublicKey)
+		log.Println(publicReceiver)
 		if errLoad != nil {
 			return "", errLoad
 		}

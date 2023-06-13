@@ -257,8 +257,10 @@ func LoadToEnterAlreadyUserPrivate(privateKey string) (*User, error) {
 	return LoadedUser, nil
 }
 
+// LoadToEnterAlreadyUserPublic TODO TO MYSQL
 func LoadToEnterAlreadyUserPublic(publicKey string) (*User, error) {
-	db, err := gorm.Open(sqlite.Open("Database/ContractDB.db"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open("C:\\Users\\forda\\GolandProjects\\VOX2\\Database\\ContractDB.db"), &gorm.Config{})
+	//db, err := gorm.Open(sqlite.Open("Database/ContractDB.db"), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
@@ -272,8 +274,10 @@ func LoadToEnterAlreadyUserPublic(publicKey string) (*User, error) {
 	return LoadedUser, nil
 }
 
+// GetUserByPublic TODO TO MYSQL
 func GetUserByPublic(publicKey string) (*User, error) {
-	db, err := gorm.Open(sqlite.Open("Database/ContractDB.db"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open("C:\\Users\\forda\\GolandProjects\\VOX2\\Database\\ContractDB.db"), &gorm.Config{})
+	//db, err := gorm.Open(sqlite.Open("Database/ContractDB.db"), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
@@ -349,9 +353,12 @@ func NewCandidate(description string, affiliation string) (*ElectionSubjects, er
 		VotingAffiliation: affiliation,
 	}, nil
 }
+
+// GetCandidate TODO TO MYSQL
 func GetCandidate(PublicKey string) (*ElectionSubjects, error) {
+	db, err := gorm.Open(sqlite.Open("C:\\Users\\forda\\GolandProjects\\VOX2\\Database\\ContractDB.db"), &gorm.Config{})
 	var checkIsCandidate *ElectionSubjects
-	db, err := gorm.Open(sqlite.Open("Database/ContractDB.db"), &gorm.Config{})
+	//db, err := gorm.Open(sqlite.Open("Database/ContractDB.db"), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}

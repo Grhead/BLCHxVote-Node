@@ -81,7 +81,7 @@ func NewBlock(prevHash string, chainMaster string) (*Block, error) {
 
 func NewTransaction(
 	fromUser *User,
-	toUser *User,
+	toUser *ElectionSubjects,
 	lastHash string,
 	value int64) (*Transaction, error) {
 	VarConf := viper.GetString("RAND_BYTES")
@@ -166,6 +166,34 @@ func LastHash(master string) (string, error) {
 		}
 	}
 	return hash, nil
+}
+
+func GetBlock(master string) (map[string]int64, error) {
+	db, err := gorm.Open(sqlite.Open("Database/NodeDb.db"), &gorm.Config{})
+	if err != nil {
+		return nil, err
+	}
+	var maping = make(map[string]int64)
+	var chain []*Chain
+	var blocks []*Block
+	db.Table("Chains").Find(&chain)
+	for _, v := range chain {
+		deserializedBlock, errDes := DeserializeBlock(v.Block)
+		if errDes != nil {
+			return nil, errDes
+		}
+		blocks = append(blocks, deserializedBlock)
+	}
+	sort.Slice(blocks, func(i, j int) bool {
+		return blocks[i].TimeStamp.AsTime().After(blocks[j].TimeStamp.AsTime())
+	})
+	for _, v := range blocks {
+		if v.ChainMaster == master {
+			maping = v.BalanceMap
+			break
+		}
+	}
+	return maping, nil
 }
 
 func AddBlock(block *Block) error {
@@ -320,6 +348,25 @@ func NewCandidate(description string, affiliation string) (*ElectionSubjects, er
 		Description:       description,
 		VotingAffiliation: affiliation,
 	}, nil
+}
+func GetCandidate(PublicKey string) (*ElectionSubjects, error) {
+	var checkIsCandidate *ElectionSubjects
+	db, err := gorm.Open(sqlite.Open("Database/ContractDB.db"), &gorm.Config{})
+	if err != nil {
+		return nil, err
+	}
+	db.Raw("SELECT * FROM ElectionSubjects WHERE PublicKey = $1",
+		PublicKey).Scan(&checkIsCandidate)
+	if checkIsCandidate != nil {
+		return &ElectionSubjects{
+			Id:                checkIsCandidate.Id,
+			PublicKey:         checkIsCandidate.PublicKey,
+			Description:       checkIsCandidate.Description,
+			VotingAffiliation: checkIsCandidate.VotingAffiliation,
+		}, nil
+	} else {
+		return nil, errors.New("election subject not founded")
+	}
 }
 
 func Size(master string) (uint64, error) {

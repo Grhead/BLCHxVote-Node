@@ -11,6 +11,10 @@ func (user *User) Address() string {
 	return user.PublicKey
 }
 
+func (election *ElectionSubjects) Address() string {
+	return election.PublicKey
+}
+
 func (user *User) Private() (string, error) {
 	var PrivateKey string
 	db, err := gorm.Open(sqlite.Open("Database/ContractDB.db"), &gorm.Config{})

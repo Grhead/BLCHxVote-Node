@@ -126,9 +126,16 @@ func AddBlock(pack *Transport.BlockHelp) (string, error) {
 func AddTransaction(BlockTx *Transport.TransactionHelp) (string, error) {
 	var err error
 	var tx *Blockchain.Transaction
+	if len(BlockForTransaction.Transactions) < 1 {
+		BlockForTransaction.BalanceMap, err = Blockchain.GetBlock(BlockTx.Master)
+	}
 	if BlockTx.Sender == nil {
 		log.Println(BlockTx)
-		tx, err = Blockchain.NewTransactionFromChain(BlockTx.Master, BlockTx.Receiver, BlockTx.Count)
+		publicReceiver, errLoad := Blockchain.LoadToEnterAlreadyUserPublic(BlockTx.Receiver.PublicKey)
+		if errLoad != nil {
+			return "", errLoad
+		}
+		tx, err = Blockchain.NewTransactionFromChain(BlockTx.Master, publicReceiver, BlockTx.Count)
 		if err != nil {
 			return "", err
 		}
@@ -137,7 +144,11 @@ func AddTransaction(BlockTx *Transport.TransactionHelp) (string, error) {
 		if errLastHash != nil {
 			return "", errLastHash
 		}
-		tx, err = Blockchain.NewTransaction(BlockTx.Sender, BlockTx.Receiver, hash, BlockTx.Count)
+		publicReceiver, errLoad := Blockchain.GetCandidate(BlockTx.Receiver.PublicKey)
+		if errLoad != nil {
+			return "", errLoad
+		}
+		tx, err = Blockchain.NewTransaction(BlockTx.Sender, publicReceiver, hash, BlockTx.Count)
 		if err != nil {
 			return "", err
 		}
@@ -152,10 +163,16 @@ func AddTransaction(BlockTx *Transport.TransactionHelp) (string, error) {
 		return "", err
 	}
 	Mutex.Unlock()
-	fmt.Println(len(BlockForTransaction.Transactions))
-	//if len(BlockForTransaction.Transactions) == Blockchain.TxsLimit {
-	go goAddTransaction()
-	//}
+	BlockForTransaction.PrevHash, err = Blockchain.LastHash(BlockTx.Master)
+	if err != nil {
+		return "", err
+	}
+	log.Println(BlockForTransaction.Transactions)
+	log.Println(len(BlockForTransaction.Transactions))
+	if len(BlockForTransaction.Transactions) == Blockchain.TxsLimit {
+		go goAddTransaction()
+		//BlockForTransaction.BalanceMap, err = Blockchain.GetBlock(BlockTx.Master)
+	}
 	return "ok", nil
 }
 

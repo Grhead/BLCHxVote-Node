@@ -34,18 +34,22 @@ func init() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	file, err := os.ReadFile("LowConf/addr.json")
+	//file, err := os.ReadFile("LowConf/addr.json")
+	//if err != nil {
+	//	log.Fatalln(err)
+	//}
+	//var p fastjson.Parser
+	//v, err := p.Parse(string(file))
+	//if err != nil {
+	//	log.Fatalln(err)
+	//}
+	//OtherAddresses = v.GetArray("addresses")
+	OtherAddresses, err = ReadAddresses()
 	if err != nil {
 		log.Fatalln(err)
 	}
-	var p fastjson.Parser
-	v, err := p.Parse(string(file))
-	if err != nil {
-		log.Fatalln(err)
-	}
-	OtherAddresses = v.GetArray("addresses")
-	for i, v := range OtherAddresses {
-		if strings.Contains(v.String(), ThisServe) {
+	for i, k := range OtherAddresses {
+		if strings.Contains(k.String(), ThisServe) {
 			func(slice []*fastjson.Value, s int) []*fastjson.Value {
 				return append(slice[:s], slice[s+1:]...)
 			}(OtherAddresses, i)
@@ -142,6 +146,7 @@ func GinAddTransaction(c *gin.Context) {
 		c.JSON(200, gin.H{"addTxStatus": transaction})
 	}
 }
+
 func GinGetBlocks(c *gin.Context) {
 	var input *Transport.MasterHelp
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -240,4 +245,16 @@ func GinPushBlockToNet(c *gin.Context) {
 		}
 		c.JSON(200, gin.H{"Status": "ok"})
 	}
+}
+func ReadAddresses() ([]*fastjson.Value, error) {
+	file, err := os.ReadFile("LowConf/addr.json")
+	if err != nil {
+		return nil, err
+	}
+	var p fastjson.Parser
+	v, err := p.Parse(string(file))
+	if err != nil {
+		return nil, err
+	}
+	return v.GetArray("addresses"), nil
 }

@@ -1,7 +1,9 @@
 package Blockchain
 
 import (
+	"crypto/aes"
 	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
@@ -14,11 +16,10 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 )
 
-const (
-	TxsLimit = 4
-)
+const TxsLimit = 4
 
 func init() {
 	viper.SetConfigFile("./LowConf/config.env")
@@ -173,7 +174,7 @@ func GetBlock(master string) (map[string]int64, error) {
 	if err != nil {
 		return nil, err
 	}
-	var maping = make(map[string]int64)
+	var mapping = make(map[string]int64)
 	var chain []*Chain
 	var blocks []*Block
 	db.Table("Chains").Find(&chain)
@@ -189,11 +190,11 @@ func GetBlock(master string) (map[string]int64, error) {
 	})
 	for _, v := range blocks {
 		if v.ChainMaster == master {
-			maping = v.BalanceMap
+			mapping = v.BalanceMap
 			break
 		}
 	}
-	return maping, nil
+	return mapping, nil
 }
 
 func AddBlock(block *Block) error {
@@ -217,8 +218,9 @@ func AddBlock(block *Block) error {
 }
 
 // NewDormantUser same with AddPass (BLCHxVote)
-func NewDormantUser(identifier string) (string, error) {
-	db, err := gorm.Open(sqlite.Open("Database/ContractDB.db"), &gorm.Config{})
+func NewDormantUser(identifier string, master string) (string, error) {
+	DbConf := viper.GetString("DCS")
+	db, err := gorm.Open(sqlite.Open(DbConf), &gorm.Config{})
 	if err != nil {
 		return "", err
 	}
@@ -232,15 +234,90 @@ func NewDormantUser(identifier string) (string, error) {
 	if isUsed != "" {
 		return "", errors.New("identifier not allowed")
 	}
-	db.Exec("INSERT INTO RelationPatterns (Id, PersonIdentifier, PrivateKeyTemplate) VALUES ($1, $2, $3)",
+	encryptCode, err := EncryptAES([]byte(master), identifier)
+	if err != nil {
+		return "", err
+	}
+	db.Exec("INSERT INTO RelationPatterns (Id, PersonIdentifier, PrivateKeyTemplate, Master) VALUES ($1, $2, $3, $4)",
 		uuid.NewString(),
-		HashSum(identifier),
-		privateGenKey)
-	return HashSum(identifier), nil
+		encryptCode,
+		privateGenKey,
+		master)
+	return encryptCode, nil
+}
+
+func EncryptAES(key []byte, plaintext string) (string, error) {
+	length := len(key)
+	lengthOfPlaintext := len(plaintext)
+	if length == 16 {
+		c, err := aes.NewCipher(key)
+		if err != nil {
+			return "", err
+		}
+		out := make([]byte, len(plaintext))
+		c.Encrypt(out, []byte(plaintext))
+		return hex.EncodeToString(out), nil
+	} else {
+		if length < 16 {
+			for i := length; i < 16; i++ {
+				key = append(key, []byte("0")...)
+			}
+		} else {
+			key = key[:16]
+		}
+		c, err := aes.NewCipher(key)
+		if err != nil {
+			return "", err
+		}
+		if lengthOfPlaintext < len(key) {
+			for i := lengthOfPlaintext; i < 16; i++ {
+				plaintext = plaintext + "0110"
+			}
+		}
+		out := make([]byte, len(plaintext))
+		c.Encrypt(out, []byte(plaintext))
+		return hex.EncodeToString(out), nil
+	}
+}
+func DecryptAES(key []byte, plaintext string) (string, error) {
+	length := len(key)
+	if length == 16 {
+		ciphertext, _ := hex.DecodeString(plaintext)
+		c, err := aes.NewCipher(key)
+		if err != nil {
+			return "", err
+		}
+		fmt.Println(ciphertext)
+		fmt.Println(ciphertext)
+		pt := make([]byte, len(ciphertext))
+		c.Decrypt(pt, ciphertext)
+		s := string(pt[:])
+		t := strings.Replace(s, "0110", "", -1)
+		return t, nil
+	} else {
+		if length < 16 {
+			for i := length; i < 16; i++ {
+				key = append(key, []byte("0")...)
+			}
+		} else {
+			key = key[:16]
+		}
+		ciphertext, _ := hex.DecodeString(plaintext)
+		c, err := aes.NewCipher(key)
+		if err != nil {
+			return "", err
+		}
+		pt := make([]byte, len(ciphertext))
+		c.Decrypt(pt, ciphertext)
+		s := string(pt[:])
+		t := strings.Replace(s, "0110", "", -1)
+		return t, nil
+	}
 }
 
 func LoadToEnterAlreadyUserPrivate(privateKey string) (*User, error) {
-	db, err := gorm.Open(sqlite.Open("Database/ContractDB.db"), &gorm.Config{})
+	DbConf := viper.GetString("DCS")
+	db, err := gorm.Open(sqlite.Open(DbConf), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
@@ -257,10 +334,9 @@ func LoadToEnterAlreadyUserPrivate(privateKey string) (*User, error) {
 	return LoadedUser, nil
 }
 
-// LoadToEnterAlreadyUserPublic TODO TO MYSQL
 func LoadToEnterAlreadyUserPublic(publicKey string) (*User, error) {
-	db, err := gorm.Open(sqlite.Open("C:\\Users\\forda\\GolandProjects\\VOX2\\Database\\ContractDB.db"), &gorm.Config{})
-	//db, err := gorm.Open(sqlite.Open("Database/ContractDB.db"), &gorm.Config{})
+	DbConf := viper.GetString("DCS")
+	db, err := gorm.Open(sqlite.Open(DbConf), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
@@ -274,42 +350,22 @@ func LoadToEnterAlreadyUserPublic(publicKey string) (*User, error) {
 	return LoadedUser, nil
 }
 
-// GetUserByPublic TODO TO MYSQL
 func GetUserByPublic(publicKey string) (*User, error) {
-	db, err := gorm.Open(sqlite.Open("C:\\Users\\forda\\GolandProjects\\VOX2\\Database\\ContractDB.db"), &gorm.Config{})
-	//db, err := gorm.Open(sqlite.Open("Database/ContractDB.db"), &gorm.Config{})
+	DbConf := viper.GetString("DCS")
+	db, err := gorm.Open(sqlite.Open(DbConf), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
 	var LoadedUser *User
-	//var affiliation string
 	db.Raw("SELECT * FROM PublicKeySets WHERE PublicKey = $1",
 		publicKey).Scan(&LoadedUser)
-	//LoadedUser.Affiliation = affiliation
-	//LoadedUser.PublicKey = publicKey
-	//LoadedUser.IsUsed = fa
-	//LoadedUser.Affiliation = affiliation
 	return LoadedUser, nil
 }
 
-// SelectByIdentifier Same with Purse (BLCHxVote) and RegisterGeneratePrivate
-/*func SelectByIdentifier(identifier string) (string, error) {
-	db, err := gorm.Open(sqlite.Open("Database/NodeDb.db"), &gorm.Config{})
-	if err != nil {
-		return "", err
-	}
-	var privateKeyTemplate string
-	db.Raw("SELECT PrivateKeyTemplate FROM RelationPatterns WHERE PersonIdentifier = $1",
-		SetHash(identifier)).Scan(&privateKeyTemplate)
-	if privateKeyTemplate == "" {
-		return "", errors.New("identifier does not exist")
-	}
-	return privateKeyTemplate, nil
-}*/
-
 // NewPublicKeyItem Same with NewUser(BLCHxVote)
 func NewPublicKeyItem(affiliation string) (*User, error) {
-	db, err := gorm.Open(sqlite.Open("Database/ContractDB.db"), &gorm.Config{})
+	DbConf := viper.GetString("DCS")
+	db, err := gorm.Open(sqlite.Open(DbConf), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
@@ -332,7 +388,8 @@ func NewPublicKeyItem(affiliation string) (*User, error) {
 }
 
 func NewCandidate(description string, affiliation string) (*ElectionSubjects, error) {
-	db, err := gorm.Open(sqlite.Open("Database/ContractDB.db"), &gorm.Config{})
+	DbConf := viper.GetString("DCS")
+	db, err := gorm.Open(sqlite.Open(DbConf), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
@@ -353,12 +410,10 @@ func NewCandidate(description string, affiliation string) (*ElectionSubjects, er
 		VotingAffiliation: affiliation,
 	}, nil
 }
-
-// GetCandidate TODO TO MYSQL
 func GetCandidate(PublicKey string) (*ElectionSubjects, error) {
-	db, err := gorm.Open(sqlite.Open("C:\\Users\\forda\\GolandProjects\\VOX2\\Database\\ContractDB.db"), &gorm.Config{})
+	DbConf := viper.GetString("DCS")
 	var checkIsCandidate *ElectionSubjects
-	//db, err := gorm.Open(sqlite.Open("Database/ContractDB.db"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(DbConf), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
@@ -418,7 +473,8 @@ func Balance(moneyMan string) (int64, error) {
 }
 
 func RegisterGeneratePrivate(passport string, salt string, PublicKey string) (string, error) {
-	db, err := gorm.Open(sqlite.Open("Database/ContractDB.db"), &gorm.Config{})
+	DbConf := viper.GetString("DCS")
+	db, err := gorm.Open(sqlite.Open(DbConf), &gorm.Config{})
 	if err != nil {
 		return "", err
 	}
@@ -428,9 +484,21 @@ func RegisterGeneratePrivate(passport string, salt string, PublicKey string) (st
 	if checkPublicKey == "" {
 		return "", errors.New("public key is invalid")
 	}
+	var checkMaster string
+	db.Raw("SELECT VotingAffiliation FROM PublicKeySets WHERE PublicKey = $1",
+		PublicKey).Scan(&checkMaster)
+	if checkMaster == "" {
+		return "", errors.New("public key is invalid (master)")
+	}
 	var checkTemplate string
+	//PseudoIdentity := HashSum(passport)[:16]
+	encryptAES, err := EncryptAES([]byte(checkMaster), passport)
+	if err != nil {
+		return "", err
+	}
+	log.Println(encryptAES)
 	db.Raw("SELECT PrivateKeyTemplate FROM RelationPatterns WHERE PersonIdentifier = $1",
-		HashSum(passport)).Scan(&checkTemplate)
+		encryptAES).Scan(&checkTemplate)
 	if checkTemplate == "" {
 		return "", errors.New("identifier does not exist")
 	}
@@ -459,7 +527,8 @@ func RegisterGeneratePrivate(passport string, salt string, PublicKey string) (st
 }
 
 func GetVotingAffiliation(PublicKey string) (string, error) {
-	db, err := gorm.Open(sqlite.Open("Database/ContractDB.db"), &gorm.Config{})
+	DbConf := viper.GetString("DCS")
+	db, err := gorm.Open(sqlite.Open(DbConf), &gorm.Config{})
 	if err != nil {
 		return "", err
 	}

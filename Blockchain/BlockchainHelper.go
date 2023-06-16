@@ -87,7 +87,8 @@ func GetTime() (*timestamp.Timestamp, error) {
 //}
 
 func ImportToDB(PrivateKey string, PublicKey string) error {
-	db, err := gorm.Open(sqlite.Open("Database/ContractDB.db"), &gorm.Config{})
+	DbConf := viper.GetString("DCS")
+	db, err := gorm.Open(sqlite.Open(DbConf), &gorm.Config{})
 	if err != nil {
 		return err
 	}
@@ -99,11 +100,6 @@ func ImportToDB(PrivateKey string, PublicKey string) error {
 }
 
 func Sign(privateKey string, data string) string {
-	//tempSign := bytes.Join([][]byte{
-	//	[]byte(privateKey),
-	//	[]byte(data),
-	//},
-	//	[]byte{})
 	tempSign := privateKey + data
 	signature := HashSum(tempSign)
 	return signature

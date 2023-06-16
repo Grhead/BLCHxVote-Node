@@ -5,6 +5,7 @@ import (
 	"VOX2/Transport"
 	"errors"
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/timeout"
 	"github.com/gin-gonic/gin"
 	"github.com/valyala/fastjson"
 	"log"
@@ -12,6 +13,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 )
 
 var Mutex sync.Mutex
@@ -34,16 +36,6 @@ func init() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	//file, err := os.ReadFile("LowConf/addr.json")
-	//if err != nil {
-	//	log.Fatalln(err)
-	//}
-	//var p fastjson.Parser
-	//v, err := p.Parse(string(file))
-	//if err != nil {
-	//	log.Fatalln(err)
-	//}
-	//OtherAddresses = v.GetArray("addresses")
 	OtherAddresses, err = ReadAddresses()
 	if err != nil {
 		log.Fatalln(err)
@@ -56,6 +48,11 @@ func init() {
 		}
 	}
 }
+func emptySuccessResponse(c *gin.Context) {
+	time.Sleep(200 * time.Microsecond)
+	c.String(http.StatusOK, "")
+}
+
 func main() {
 	rootCmd.Flags().StringVarP(&option, "set", "s", "", "Set address")
 	Execute()
@@ -72,7 +69,10 @@ func main() {
 	}))
 	router.POST("/newchain", GinNewChain)
 	router.POST("/addblock", GinAddBlock)
-	router.POST("/addtx", GinAddTransaction)
+	router.POST("/addtx", GinAddTransaction, timeout.New(
+		timeout.WithTimeout(8*time.Second),
+		timeout.WithHandler(emptySuccessResponse),
+	))
 	router.POST("/getblock", GinGetBlocks)
 	router.POST("/getlasthash", GinGetLastHash)
 	router.POST("/getbalance", GinGetBalance)

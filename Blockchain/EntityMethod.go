@@ -2,6 +2,7 @@ package Blockchain
 
 import (
 	"errors"
+	"github.com/spf13/viper"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"sort"
@@ -17,7 +18,8 @@ func (election *ElectionSubjects) Address() string {
 
 func (user *User) Private() (string, error) {
 	var PrivateKey string
-	db, err := gorm.Open(sqlite.Open("Database/ContractDB.db"), &gorm.Config{})
+	DbConf := viper.GetString("DCS")
+	db, err := gorm.Open(sqlite.Open(DbConf), &gorm.Config{})
 	if err != nil {
 		return "", err
 	}
